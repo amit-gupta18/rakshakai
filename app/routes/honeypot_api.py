@@ -24,13 +24,34 @@ class HoneypotMessageRequest(BaseModel):
     metadata: Optional[Dict[str, str]] = Field(default=None)
 
 
+class AuthorityProfile(BaseModel):
+    """Represents a single bank/government authority context."""
+    name: str
+    type: str
+    official_domains: List[str]
+    official_channels: List[str]
+    never_asks: List[str]
+    never_requests: List[str]
+    last_refreshed: float
+
+
+class ExtractedIntelligence(BaseModel):
+    """Structured intelligence extracted from scam messages."""
+    upiIds: List[str] = Field(default_factory=list)
+    phoneNumbers: List[str] = Field(default_factory=list)
+    phishingLinks: List[str] = Field(default_factory=list)
+    bankAccounts: List[str] = Field(default_factory=list)
+    suspiciousKeywords: List[str] = Field(default_factory=list)
+    authorityProfile: Optional[AuthorityProfile] = None
+
+
 class HoneypotMessageResponse(BaseModel):
     status: str
     reply: str
     scamDetected: bool
     scamType: Optional[str]
     scamScore: int
-    extractedIntelligence: Optional[Dict[str, List[str]]] = Field(default_factory=dict)
+    extractedIntelligence: ExtractedIntelligence
 
 
 @router.post("/message", response_model=HoneypotMessageResponse)
@@ -47,11 +68,25 @@ async def process_message(request: HoneypotMessageRequest):
     else:
         reply = "Thanks for your message — can you tell me more?"
 
+    # Convert extracted dict to ExtractedIntelligence model
+    authority_profile = None
+    if extracted.get("authorityProfile"):
+        authority_profile = AuthorityProfile(**extracted["authorityProfile"])
+
+    intelligence = ExtractedIntelligence(
+        upiIds=extracted.get("upiIds", []),
+        phoneNumbers=extracted.get("phoneNumbers", []),
+        phishingLinks=extracted.get("phishingLinks", []),
+        bankAccounts=extracted.get("bankAccounts", []),
+        suspiciousKeywords=extracted.get("suspiciousKeywords", []),
+        authorityProfile=authority_profile
+    )
+
     return HoneypotMessageResponse(
         status="success",
         reply=reply,
         scamDetected=scamDetected,
         scamType=scamType,
         scamScore=scamScore,
-        extractedIntelligence=extracted
+        extractedIntelligence=intelligence
     )

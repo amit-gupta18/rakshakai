@@ -187,6 +187,8 @@ class ScamDetector:
                     "type": profile.type,
                     "official_domains": profile.official_domains,
                     "official_channels": profile.official_channels,
+                    "never_asks": profile.never_asks,
+                    "never_requests": profile.never_requests,
                     "last_refreshed": profile.last_refreshed,
                 }
 
