@@ -37,6 +37,10 @@ app.add_middleware(
 # Include routers
 app.include_router(honeypot.router)
 
+# Include new PRD-style API router
+from app.routes import honeypot_api
+app.include_router(honeypot_api.router)
+
 
 # Health check endpoint (no authentication required)
 @app.get("/", response_model=HealthCheckResponse, tags=["health"])
